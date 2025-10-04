@@ -11,16 +11,14 @@ services:
       - .env
 
   hud:
-    build:
-      context: .
-      dockerfile: hud/Dockerfile
-    container_name: empire-os-hud-1
+    build: ./hud
     ports:
       - "3000:3000"
-    environment:
-      API_BASE_URL: "http://api:8000"
-    depends_on:
-      - api
+    volumes:
+      - ./hud:/app
+    env_file:
+      - .env
+
   db:
     image: postgres:14
     restart: always
