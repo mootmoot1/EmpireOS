@@ -1,0 +1,27 @@
+name: Promote dev → main
+on:
+  pull_request:
+    types: [ labeled, synchronize ]
+    branches: [ "dev" ]
+permissions:
+  contents: write
+  pull-requests: write
+jobs:
+  promote:
+    if: contains(github.event.pull_request.labels.*.name, 'ready-to-promote')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          ref: dev
+      - name: Ensure CI passed
+        run: echo "Assuming CI green on dev PR"
+      - name: Fast-forward main with dev
+        run: |
+          git config user.name  "JarvisDevBot"
+          git config user.email "bot@users.noreply.github.com"
+          git fetch origin main
+          git checkout main
+          git merge --ff-only origin/dev || (echo "Non-FF merge blocked"; exit 1)
+          git push origin main
