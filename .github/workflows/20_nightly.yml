@@ -1,0 +1,16 @@
+name: nightly self-check
+on:
+  schedule: [{ cron: "24 9 * * *" }]
+  workflow_dispatch:
+jobs:
+  selfcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+      - run: python - <<'PY'
+import sys, os
+print("Nightly self-check ping ✅")
+sys.exit(0)
+PY
