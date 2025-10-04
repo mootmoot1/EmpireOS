@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 #!/usr/bin/env python3
 <<<<<<< HEAD
 import os, sys, time, json, textwrap, subprocess, base64
@@ -131,3 +132,20 @@ if __name__=="__main__":
     if "--process-issues" in sys.argv: sys.exit(process_issues())
     print("Usage: jarvis_devbot.py [--test|--process-issues]"); sys.exit(2)
 >>>>>>> ff34bfc (devbot: target dev branch for PRs)
+=======
+import os, sys, shutil, subprocess
+def ok(msg): print(f"✅ {msg}")
+def fail(msg): print(f"❌ {msg}"); sys.exit(1)
+
+def have(cmd): return shutil.which(cmd) is not None
+def main():
+    ok("Jarvis DevBot test start")
+    # optional .env che       if os.path.exists(".env"):
+        ok(".env present")
+    else:
+        print("ℹ️ .env not found (ok for CI)")
+    if have("git"): ok("git available")
+    else: fail(   t missing")
+    ok("Test completed")
+if __name__ == "__main__": main()
+>>>>>>> 44dcaef (Reset to minimal, stable CI (dev→PR, nightly self-check, devbot CI))
