@@ -1,0 +1,21 @@
+name: "Jarvis task"
+description: "Describe the change you want; the bot will open a PR"
+labels: ["jarvis:task"]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What do you want built/changed? (plain English)
+      placeholder: "Add /metrics endpoint that returns JSON with app uptime and version"
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: What must be true for this to be 'done'?
+      placeholder: "- GET /metrics returns {uptime_seconds, version}\n- Has tests\n- Docs updated"
+  - type: textarea
+    id: context
+    attributes:
+      label: Context / links
+      description: Paste any relevant code paths, APIs, or examples.
