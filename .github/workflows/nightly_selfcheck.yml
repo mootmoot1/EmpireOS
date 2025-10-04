@@ -1,0 +1,23 @@
+name: Nightly Self-Check
+on:
+  schedule:
+    - cron: '0 3 * * *'  # Runs every night at 3 AM UTC
+  workflow_dispatch:
+
+jobs:
+  self_check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run nightly maintenance
+        run: |
+          echo '🌙 Nightly Jarvis DevBot self-check starting...'
+          python devbot/jarvis_devbot.py --test
+
