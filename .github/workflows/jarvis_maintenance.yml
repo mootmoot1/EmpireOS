@@ -1,8 +1,21 @@
+name: Jarvis Maintenance Loop
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"   # every 30 minutes
+  workflow_dispatch:
+
 jobs:
   maintain:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Run Jarvis DevBot maintenance
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install deps
         run: |
-          python3 devbot/jarvis_devbot.py --once
+          python -m pip install --upgrade pip
+          pip install requests pyyaml gitpython watchdog
+      - name: Maintenance (one-shot)
+        run: python devbot/jarvis_devbot.py --once
