@@ -1,0 +1,30 @@
+name: Notify on Failsafe run
+on:
+  workflow_run:
+    workflows: ["ci: enable DevBot auto-repair (Option A)"]
+    types: [completed]
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Post/update Failsafe status issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const run = context.payload.workflow_run;
+            const owner = context.repo.owner, repo = context.repo.repo;
+            const title = `Failsafe CI — ${run.conclusion === 'success' ? '✅' : '❌'} (${run.name})`;
+            const body = [
+              `**Status:** ${run.conclusion}`,
+              `**Event:** ${run.event}`,
+              `**Commit:** ${run.head_sha}`,
+              `**URL:** ${run.html_url}`,
+              `**When:** ${run.updated_at}`
+            ].join('\n');
+            // Reuse/open one tracking issue with label "failsafe"
+            const { data: issues } = await github.rest.issues.listForRepo({ owner, repo, state: 'open', labels: 'failsafe' });
+            if (!issues.length) {
+              await github.rest.issues.create({ owner, repo, title, body, labels: ['failsafe'] });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number: issues[0].number, body });
+            }
