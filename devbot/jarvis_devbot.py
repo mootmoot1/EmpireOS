@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-<<<<<<< Updated upstream
 import sys
 print("Jarvis DevBot core script alive ✅")
 sys.exit(0)
@@ -36,4 +35,3 @@ if __name__ == "__main__":
         sys.exit(one_shot())
     else:
         sys.exit(idle_loop())
->>>>>>> Stashed changes
