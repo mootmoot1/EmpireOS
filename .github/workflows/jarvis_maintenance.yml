@@ -1,13 +1,8 @@
-name: Jarvis Maintenance Loop
-on:
-  schedule:
-    - cron: '0 * * * *'
-  workflow_dispatch:
 jobs:
   maintain:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Run Jarvis DevBot maintenance
-        run: python3 devbot/jarvis_devbot.py --once
-
+        run: |
+          python3 devbot/jarvis_devbot.py --once
