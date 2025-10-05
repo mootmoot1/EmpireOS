@@ -1,44 +1,25 @@
-name: DevBot Core CI (debug)
-
+name: DevBot Core CI (minimal)
 on:
   push:
-    paths:
-      - "devbot/**"
-      - ".github/workflows/devbot_ci.yml"
-  workflow_dispatch:
-
+    branches: [ "main" ]
+  schedule:
+    - cron: "0 2 * * *"   # nightly @ 2am UTC
 jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Show tree & Python
-        run: |
-          echo "::group::pwd & tree"
-          pwd || true
-          ls -la || true
-          echo "::endgroup::"
-          echo "::group::recursive list"
-          find . -maxdepth 3 -type f | sort
-          echo "::endgroup::"
-          echo "::group::python version"
-          python --version
-          which python
-          echo "::endgroup::"
-
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
-
-      - name: Install deps
+          python-version: "3.11"
+      - name: Install DevBot deps
         run: |
           python -m pip install --upgrade pip
-          pip install requests pyyaml gitpython watchdog
-
-      - name: Confirm script exists
-        run: |
-          test -f devbot/jarvis_devbot.py && sed -n '1,40p' devbot/jarvis_devbot.py || (echo "MISSING: devbot/jarvis_devbot.py" && exit 2)
-
-      - name: Run self-check
+          pip install requests pyyaml gitpython || true
+      - name: Self-check
         run: python devbot/jarvis_devbot.py --test
+      - name: Auto-repair maintenance
+        env:
+          JARVIS_AUTO_FIX: "1"            # <— Option A ON
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python devbot/jarvis_devbot.py --once
