@@ -1,0 +1,81 @@
+name: Failsafe CI auto-recover
+
+on:
+  schedule:
+    - cron: '15 7 * * *'  # daily @ 07:15 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install deps
+        run: pip install --upgrade pip requests pyyaml gitpython watchdog
+
+      - name: Self-check DevBot
+        id: selfcheck
+        continue-on-error: true
+        run: python devbot/jarvis_devbot.py --test
+
+      - name: Print outcome
+        run: echo "Self-check outcome=${{ steps.selfcheck.outcome }}"
+
+      - name: Restore minimal CI (if self-check failed)
+        if: ${{ steps.selfcheck.outcome != 'success' }}
+        run: |
+          echo "Restoring minimal workflows…"
+          mkdir -p .github/workflows
+
+          # DevBot Core CI (minimal)
+          cat > .github/workflows/10_devbot_ci.yml <<'MINCI'
+          name: DevBot Core CI (minimal)
+          on: [push]
+          jobs:
+            verify:
+              runs-on: ubuntu-latest
+              steps:
+                - uses: actions/checkout@v4
+                - uses: actions/setup-python@v5
+                  with:
+                    python-version: '3.11'
+                - run: pip install --upgrade pip requests pyyaml gitpython watchdog
+                - name: Run self-check
+                  run: python devbot/jarvis_devbot.py --test
+          MINCI
+
+          # Nightly self-check (minimal)
+          cat > .github/workflows/20_nightly.yml <<'NIGHTLY'
+          name: minimal nightly self-check
+          on:
+            schedule:
+              - cron: '0 8 * * *'  # daily @ 08:00 UTC
+            workflow_dispatch:
+          jobs:
+            selfcheck:
+              runs-on: ubuntu-latest
+              steps:
+                - uses: actions/checkout@v4
+                - uses: actions/setup-python@v5
+                  with:
+                    python-version: '3.11'
+                - run: pip install --upgrade pip requests pyyaml gitpython watchdog
+                - name: Run self-check
+                  run: python devbot/jarvis_devbot.py --test
+          NIGHTLY
+
+          git config user.name  "Jarvis DevBot"
+          git config user.email "bot@jarvis.local"
+          git add .github/workflows/10_devbot_ci.yml .github/workflows/20_nightly.yml || true
+          git commit -m "failsafe: restore minimal CI workflows after failed self-check" || echo "No changes to commit"
+          git push origin HEAD:main
