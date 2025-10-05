@@ -1,0 +1,7 @@
+line1
+<<<<<<< HEAD
+mine
+=======
+theirs
+>>>>>>> branch
+line2
