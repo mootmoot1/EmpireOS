@@ -1,0 +1,15 @@
+frontend:
+  - "hud/**"
+backend:
+  - "api/**"
+devbot:
+  - "devbot/**"
+tests:
+  - "tests/**"
+docs:
+  - "README.md"
+risk:
+  - ".github/workflows/**"
+  - "docker-compose.yml"
+  - "Dockerfile"
+  - "**/settings*.py"
