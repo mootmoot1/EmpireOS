@@ -1,0 +1,16 @@
+name: AutoTag on Merge to Main
+on:
+  push:
+    branches: [ main ]
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create timestamp tag
+        run: |
+          ts=$(date -u +"v%Y.%m.%d-%H%M%S")
+          git tag -a "$ts" -m "Auto tag $ts"
+          git push origin "$ts"
