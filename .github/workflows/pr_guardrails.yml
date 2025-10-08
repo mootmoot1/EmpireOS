@@ -1,0 +1,49 @@
+name: PR Guardrails
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+jobs:
+  size-check:
+    runs-on: ubuntu-latest
+    permissions: { contents: read, pull-requests: read }
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compute PR size
+        id: sz
+        run: |
+          base="${{ github.event.pull_request.base.sha }}"
+          head="${{ github.event.pull_request.head.sha }}"
+          files=$(git diff --name-only "$base" "$head" | wc -l | tr -d ' ')
+          added=$(git diff --numstat "$base" "$head" | awk '{a+=$1} END{print a+0}')
+          echo "files=$files" >> $GITHUB_OUTPUT
+          echo "added=$added" >> $GITHUB_OUTPUT
+      - name: Enforce limits
+        run: |
+          if [ "${{ steps.sz.outputs.files }}" -gt 25 ] || [ "${{ steps.sz.outputs.added }}" -gt 500 ]; then
+            echo "PR too large: files=${{ steps.sz.outputs.files }}, added=${{ steps.sz.outputs.added }}"
+            exit 1
+          fi
+
+  risky-check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Require risk-ok label if risk label present
+        run: |
+          PR_URL="${{ github.event.pull_request.url }}"
+          AUTH="Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}"
+          LABS=$(curl -s -H "$AUTH" "$PR_URL/labels" | jq -r '.[].name' | tr '\n' ' ')
+          echo "Labels: $LABS"
+          if echo "$LABS" | grep -q "risk"; then
+            if echo "$LABS" | grep -q "risk-ok"; then
+              echo "risk present, but risk-ok acknowledged — proceeding."
+            else
+              echo "risk present, missing risk-ok — failing PR until a human approves."
+              exit 1
+            fi
+          else
+            echo "no risk label — OK"
+          fi
