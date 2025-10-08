@@ -1,0 +1,27 @@
+name: Jarvis Phase 2.5 (stability loop)
+
+on:
+  schedule:
+    - cron: "0 */12 * * *"   # every 12 hours
+  workflow_dispatch:
+
+jobs:
+  phase2_5:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python3 -m pip install --upgrade pip requests pyyaml gitpython watchdog
+
+      - name: Run Jarvis Phase 2.5 Task Loop
+        run: |
+          echo "⚙️ Running Jarvis DevBot maintenance cycle..."
+          python3 devbot/jarvis_devbot.py --once
