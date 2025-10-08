@@ -1,25 +1,30 @@
 name: DevBot Core CI (minimal)
+
 on:
   push:
-    branches: [ "main" ]
-  schedule:
-    - cron: "0 2 * * *"   # nightly @ 2am UTC
+    branches:
+      - main
+      - dev
+      - fix/**
+  workflow_dispatch:
+
 jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
-      - name: Install DevBot deps
+          python-version: '3.11'
+
+      - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install requests pyyaml gitpython || true
-      - name: Self-check
-        run: python devbot/jarvis_devbot.py --test
-      - name: Auto-repair maintenance
-        env:
-          JARVIS_AUTO_FIX: "1"            # <— Option A ON
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: python devbot/jarvis_devbot.py --once
+          python3 -m pip install --upgrade pip requests pyyaml gitpython watchdog
+
+      - name: Run DevBot self-check
+        run: |
+          echo "🧠 Running DevBot Core Check..."
+          python3 devbot/jarvis_devbot.py --test
