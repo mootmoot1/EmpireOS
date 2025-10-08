@@ -1,0 +1,16 @@
+name: Notify on Failsafe Runs
+
+on:
+  workflow_run:
+    workflows:
+      - Failsafe Auto-Repair
+    types:
+      - completed
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Post result
+        run: |
+          echo "📢 Failsafe run for ${{ github.event.workflow_run.name }} finished with conclusion: ${{ github.event.workflow_run.conclusion }}"
