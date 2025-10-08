@@ -1,0 +1,23 @@
+name: Jarvis Builder+ (issues → PR with code)
+on:
+  schedule: [{ cron: "*/5 * * * *" }]
+  workflow_dispatch: {}
+permissions:
+  contents: write
+  pull-requests: write
+  issues: read
+jobs:
+  builder_plus:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - name: Install deps
+        run: python -m pip install --upgrade pip requests
+      - name: Run Builder+
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: python devbot/jarvis_builder_plus.py
