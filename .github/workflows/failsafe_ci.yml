@@ -1,0 +1,63 @@
+name: Failsafe Auto-Repair
+
+on:
+  workflow_run:
+    workflows:
+      - Jarvis Phase 2.5 (stability loop)
+      - DevBot Core CI (minimal)
+    types:
+      - completed
+
+jobs:
+  auto_repair:
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: read
+      issues: write
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install deps
+        run: |
+          python3 -m pip install --upgrade pip requests pyyaml gitpython watchdog
+
+      - name: Auto-repair with DevBot
+        id: repair
+        run: |
+          echo "🔧 Running auto-repair after failure of: ${{ github.event.workflow_run.name }} (#${{ github.event.workflow_run.id }})"
+          python3 devbot/jarvis_devbot.py --once
+
+      - name: Re-run the failed workflow (optional)
+        run: |
+          echo "♻️ Re-running failed workflow run ${{ github.event.workflow_run.id }}"
+          curl -sSL -X POST \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/${{ github.repository }}/actions/runs/${{ github.event.workflow_run.id }}/rerun
+
+      - name: Leave a note (optional)
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = `Failsafe repair triggered for "${{ github.event.workflow_run.name }}"`;
+            const body = [
+              `Workflow: ${{ github.event.workflow_run.name }}`,
+              `Run ID: ${{ github.event.workflow_run.id }}`,
+              `Conclusion: ${{ github.event.workflow_run.conclusion }}`,
+              `Repair job: completed`,
+              `Re-run requested: yes`
+            ].join('\n');
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body
+            })
