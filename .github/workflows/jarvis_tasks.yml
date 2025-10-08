@@ -1,6 +1,6 @@
-name: Jarvis Tasks → PR (to dev)
+name: Jarvis Tasks → Scaffold PR
 on:
-  schedule: [{cron: "*/5 * * * *"}]
+  schedule: [{ cron: "*/5 * * * *" }]
   workflow_dispatch: {}
 permissions:
   contents: write
@@ -13,8 +13,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.11" }
-      - run: |
-          python -m pip install --upgrade pip
-          pip install requests pyyaml gitpython
-          # env passed by Actions: GITHUB_TOKEN, OPENAI_API_KEY via secrets
-          python devbot/jarvis_devbot.py --process-issues
+      - run: python -m pip install --upgrade pip requests
+      - name: Process issues labeled jarvis:task
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: python devbot/jarvis_builder.py
