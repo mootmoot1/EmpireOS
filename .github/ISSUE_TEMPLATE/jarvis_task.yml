@@ -1,0 +1,19 @@
+name: "Jarvis task"
+description: "Describe what you want; Jarvis will open a PR"
+labels: ["jarvis:task"]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      placeholder: "Add /healthz endpoint that returns version"
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      placeholder: "- GET /healthz returns 200 {version}\n- unit test exists\n- README updated"
+  - type: textarea
+    id: context
+    attributes:
+      label: Context/links
+      placeholder: "APIs, code paths, notes"
