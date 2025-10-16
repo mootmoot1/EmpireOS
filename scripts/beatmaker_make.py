@@ -1,52 +1,68 @@
 #!/usr/bin/env python3
-import argparse, os, json
+"""
+BeatMaker CLI — generates MIDI stems into a neat song folder.
+- No FluidSynth usage (audio rendering skipped).
+- Optional: reveal the output folder in Finder (macOS).
+"""
+
 from pathlib import Path
-from datetime import datetime
+import argparse, json, time, subprocess, sys
 
-# import our generator
-from agents.beatmaker.beatmaker_agent import generate_midi, make_filename, DEFAULTS
+# Reuse MIDI generator from the agent
+from agents.beatmaker.beatmaker_agent import generate_midi, DEFAULTS
 
-def song_folder(root: Path, song: str) -> Path:
-    d = root / "outputs" / "beatmaker" / song
-    d.mkdir(parents=True, exist_ok=True)
-    return d
+def make_filename(stem: str, key: str, bpm: int, bars: int, ts: str) -> str:
+    return f"{stem}_{key}_{bpm}bpm_{bars}bars_{ts}.mid"
 
 def main():
-    p = argparse.ArgumentParser(description="BeatMaker – generate MIDI layers")
-    p.add_argument("--style", default=DEFAULTS["style"])
-    p.add_argument("--key",   default=DEFAULTS["key"])
-    p.add_argument("--bpm",   type=int, default=DEFAULTS["bpm"])
-    p.add_argument("--bars",  type=int, default=DEFAULTS["bars"])
-    p.add_argument("--song",  required=True, help="Song name (folder)")
-    p.add_argument("--layers", default="drums,chords,melody",
-                   help="Comma list of layers to render")
+    p = argparse.ArgumentParser(description="BeatMaker -> generate a MIDI stem bundle")
+    p.add_argument("--style",  default="trap",        help="style tag (e.g. trap, lofi, drill)")
+    p.add_argument("--key",    default=DEFAULTS.get("key","C_minor"))
+    p.add_argument("--bpm",    type=int, default=DEFAULTS.get("tempo_bpm",140))
+    p.add_argument("--bars",   type=int, default=DEFAULTS.get("bars",8))
+    p.add_argument("--song",   default="Untitled")
+    p.add_argument("--reveal", action="store_true", help="Open the output folder in Finder when done")
     args = p.parse_args()
 
-    root = Path(__file__).resolve().parents[1]
-    outdir = song_folder(root, args.song)
+    # Output layout: outputs/beatmaker/<SongName>/<timestamp>/
+    root = Path("outputs/beatmaker")
+    ts   = time.strftime("%Y%m%d_%H%M%S")
+    folder = root / args.song / ts
+    folder.mkdir(parents=True, exist_ok=True)
 
-    # save a small manifest for convenience
+    stems = ["drums","chords","melody"]  # extend later (bass, counter, fx, etc.)
+    written = []
+
+    for stem in stems:
+        mid = generate_midi(stem=stem, key=args.key, tempo=args.bpm, bars=args.bars, style=args.style)
+        out_name = make_filename(stem, args.key, args.bpm, args.bars, ts)
+        out_path = folder / out_name
+        mid.save(out_path)
+        written.append(out_name)
+
+    # Manifest for DAW import
     manifest = {
         "song": args.song,
         "style": args.style,
         "key": args.key,
         "bpm": args.bpm,
         "bars": args.bars,
-        "timestamp": datetime.now().isoformat(timespec="seconds")
+        "timestamp": ts,
+        "files": written,
+        "notes": "Render audio in your DAW (FL/Logic). FluidSynth intentionally disabled."
     }
-    (outdir / "manifest.json").write_text(json.dumps(manifest, indent=2))
+    (folder / "manifest.json").write_text(json.dumps(manifest, indent=2))
 
-    made = []
-    for layer in [s.strip() for s in args.layers.split(",") if s.strip()]:
-        fname = make_filename(f"{args.style}-{layer}", args.key, args.bpm, args.bars)
-        outpath = outdir / fname
-        # you can branch layer-specific logic inside generate_midi if you want
-        generate_midi(args.style, args.key, args.bpm, args.bars, str(outpath))
-        made.append(outpath.name)
+    print("✅ Beat created:")
+    print("   Folder:", str(folder.resolve()))
+    print("   Files:", *written, sep="\n   - ")
 
-    print(f"✅ Saved to: {outdir}")
-    print("🎼 Files:", *made, sep="\n  - ")
+    if args.reveal and sys.platform == "darwin":
+        # Open folder in Finder
+        try:
+            subprocess.run(["open", str(folder.resolve())], check=False)
+        except Exception as e:
+            print(f"⚠️ Could not reveal folder: {e}")
 
 if __name__ == "__main__":
     main()
-
